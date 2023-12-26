@@ -60,10 +60,9 @@ bd_name = 'book_db'
 DSN = f"postgresql://{login}:{password}@localhost:5432/{bd_name}"
 engine = sq.create_engine(DSN)
 create_tables(engine)
-
-
 Session = sessionmaker(bind=engine)
 session = Session()
+
 
 #Заполнение БД из файла(Задание 3)
 
@@ -76,13 +75,19 @@ session.commit()
 
 #Задание 2
 
-pub_name = input("Введите имя издателя  ")
+def get_shops(pub_name): #Функция принимает обязательный параметр
+    Session = sessionmaker(bind=engine)
+    dbsession = Session()
+    q = dbsession.query(Book.title, Shop.name, Sale.price, Sale.date_sale).select_from(Shop). \
+        join(Stock).join(Book).join(Publisher).join(Sale)
+    if pub_name_id.isdigit():
+        result = q.filter(Publisher.id == pub_name_id).all()
+    else:
+        result = q.filter(Publisher.name == pub_name_id).all()
+    print(f"{'Название книги': <40} | {'Название магазина': <20} | {'Стоимость': <12} | {'Дата покупки'}")
+    for book, shop, price, date in result:
+        print(f"{book: <40} | {shop: <20} | {price: <12} | {date.strftime('%d-%m-%Y')}")
 
-q = session.query(Publisher).join(Book.publisher).join(Stock).join(Shop).join(Sale).filter(Publisher.name == pub_name)
-print("%-60s %-35s %-25s %-10s" % ('Название книги', 'Название магазина', 'Стоимость покупки', 'Дата покупки'))
-for p in q.all():
-    for b in p.books:
-        for st in b.stock:
-            for sa in st.sale:
-                if sa.price > 0:
-                    print("%-60s %-40s %-21s %-10s" % (b.title, st.shop.name, sa.price, sa.date_sale))
+if __name__ == '__main__':
+    pub_name_id = input("Введите имя или ID издателя: ")
+    get_shops(pub_name_id)
